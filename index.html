@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+  <link rel="manifest" href="https://raw.githubusercontent.com/alexosthebestnet/AirparrotHUB/main/applewebapp.json">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Assistant</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+        }
+
+        .background {
+            width: 100%;
+            height: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        .background img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+      /* Add this to your existing style tag */
+#info-widgets {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    text-align: right;
+}
+
+#info-widgets p {
+    margin: 5px;
+    color: white; /* or any color you prefer */
+}
+
+
+        .menu {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .menu p, .menu button {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="background" class="background" onclick="toggleMenu()">
+        <img id="statusGif" src="https://i.ibb.co/R9Lxd4W/Default-photo.jpg
+" alt="Status">
+    </div>
+    <div id="menu" class="menu">
+        <p>Email: support@example.com</p>
+        <button onclick="sleepMode()">Sleep Mode</button>
+        <button onclick="closeMenu()">Close</button>
+    </div>
+  <!-- Add this inside your body tag -->
+<div id="info-widgets">
+    <p id="time"></p>
+    <p id="date"></p>
+    <!-- Add more widgets here -->
+</div>
+
+
+    <script src="https://code.responsivevoice.org/responsivevoice.js"></script>
+    <script>
+        let listeningForCommand = false;
+let lastTranscript = '';
+const wakeWord = "hey hub";
+const recognition = new webkitSpeechRecognition();
+const silenceDelay = 2000; // 2 seconds
+let silenceTimer;
+let messages = [];
+const maxMessages = 8; // Maximum number of messages to keep
+
+// Array of commands and corresponding actions
+const commandActions = [
+    { 
+        command: "weather", 
+        action: fetchWeather 
+        // Add more commands and their corresponding actions here
+    },
+    // ... other command-action pairs
+];
+
+function fetchWeather() {
+    // Placeholder for weather fetching logic
+    console.log("Fetching weather data...");
+    // Implement the logic to fetch and display weather data here
+}
+
+window.onload = function() {
+    const savedMessages = localStorage.getItem('messages');
+    if (savedMessages) {
+        messages = JSON.parse(savedMessages);
+    }
+    setGif('https://i.ibb.co/R9Lxd4W/Default-photo.jpg'); // Set default GIF
+    updateDateTime(); // Initialize date and time
+};
+
+recognition.continuous = true;
+recognition.interimResults = true;
+recognition.lang = 'en-US';
+
+recognition.onresult = function(event) {
+    clearTimeout(silenceTimer);
+
+    const currentTranscript = Array.from(event.results)
+                                   .map(result => result[0].transcript)
+                                   .join('');
+
+    if (!listeningForCommand && currentTranscript.toLowerCase().includes(wakeWord)) {
+        listeningForCommand = true;
+        lastTranscript = '';
+        setGif('https://i.ibb.co/JkRhNz4/Listening.gif');
+        addSystemMessage();
+    } else if (listeningForCommand) {
+        lastTranscript = currentTranscript;
+        silenceTimer = setTimeout(() => {
+            const commandAfterWakeWord = lastTranscript.substring(lastTranscript.toLowerCase().indexOf(wakeWord) + wakeWord.length).trim();
+            if (commandAfterWakeWord) {
+                setGif('https://i.ibb.co/0CV9sYB/Thinking.gif');
+                sendCommandToAPI(commandAfterWakeWord);
+            } else {
+                setGif('https://i.ibb.co/Js4KZDw/Nothing-detected.gif');
+            }
+            listeningForCommand = false;
+            recognition.stop(); // Stop recognition while processing the command
+        }, silenceDelay);
+    }
+};
+
+recognition.onerror = function(event) {
+    if (event.error === 'no-speech') {
+        setGif('https://i.ibb.co/dLKr4Mk/Error.gif');
+        restartRecognition();
+    }
+};
+
+recognition.start();
+
+function addSystemMessage() {
+    const today = new Date().toLocaleDateString();
+    const systemMessage = `Today's date is ${today}. I am an AI assistant designed to respond to your voice commands.`;
+    messages.push({ role: 'system', content: systemMessage });
+    trimMessages();
+}
+
+function sendCommandToAPI(command) {
+    console.log("Sending command to API:", command);
+    messages.push({ role: 'user', content: command });
+    trimMessages();
+
+    fetch("https://api.deepinfra.com/v1/openai/chat/completions", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer HnO6SXFKeKem8tkzRo8f8LAbeWL42F6h" // Your API key
+        },
+        body: JSON.stringify({
+            "model": "mistralai/Mistral-7B-Instruct-v0.1",
+            "messages": messages
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        const reply = data.choices[0].message.content;
+        console.log("API Response:", reply);
+        messages.push({ role: 'assistant', content: reply });
+        trimMessages();
+        speakResponse(reply);
+        saveMessages();
+    })
+    .catch(error => {
+        console.error("API Error:", error.message);
+        setGif('https://i.ibb.co/dLKr4Mk/Error.gif');
+        document.getElementById('status').textContent = error.message;
+    });
+}
+
+function trimMessages() {
+    if (messages.length > maxMessages) {
+        messages = messages.slice(-maxMessages); // Keep only the last 'maxMessages' messages
+    }
+}
+
+function saveMessages() {
+    localStorage.setItem('messages', JSON.stringify(messages));
+}
+
+function speakResponse(response) {
+    console.log("Speaking:", response);
+
+    // Default responding GIF
+    let gifToUse = 'https://i.ibb.co/ftsz0Xx/Responding.gif'; 
+
+    // Check for command keywords in the response
+    commandActions.forEach(item => {
+        if (response.toLowerCase().includes(item.command)) {
+            item.action(); // Run the associated action
+            response = response.replace(item.command, ''); // Remove command from response
+            gifToUse = 'https://example.com/running-code.gif'; // GIF for running code
+        }
+    });
+
+    setGif(gifToUse); // Set the GIF based on the detected command
+
+    responsiveVoice.speak(response, "UK English Male", {
+        onend: function() {
+            setGif('https://i.ibb.co/R9Lxd4W/Default-photo.jpg');
+            listeningForCommand = false; // Set this to false to allow for wake word detection
+            recognition.start(); // Restart recognition after speaking
+        }
+    });
+}
+
+function setGif(gifPath) {
+    document.getElementById('statusGif').src = gifPath;
+}
+
+function toggleMenu() {
+    document.getElementById('menu').style.display = 'block';
+}
+
+function sleepMode() {
+    setGif('https://i.ibb.co/sgZn6nz/IMG-6440.jpg');
+    closeMenu();
+}
+
+function closeMenu() {
+    document.getElementById('menu').style.display = 'none';
+}
+
+function restartRecognition() {
+    recognition.stop();
+    setTimeout(() => {
+        recognition.start();
+    }, 1000);
+}
+
+// Additional code to update time, date, and other information
+function updateDateTime() {
+    const now = new Date();
+    document.getElementById('time').textContent = now.toLocaleTimeString();
+    document.getElementById('date').textContent = now.toLocaleDateString();
+    // Add more dynamic updates here
+}
+
+// Call updateDateTime every second
+setInterval(updateDateTime, 1000);
+    </script>
+</body>
+</html>
