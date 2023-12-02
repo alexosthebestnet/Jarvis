@@ -267,6 +267,12 @@ function updateDateTime() {
 
 // Call updateDateTime every second
 setInterval(updateDateTime, 1000);
+
+      recognition.onend = function() {
+    // Automatically restart recognition when it stops
+    restartRecognition();
+};
+
     </script>
 </body>
 </html>
