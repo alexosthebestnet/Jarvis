@@ -80,7 +80,7 @@
     <script>
         let listeningForCommand = false;
 let lastTranscript = '';
-const wakeWord = "hey hub";
+const wakeWord = "jarvis";
 const recognition = new webkitSpeechRecognition();
 const silenceDelay = 2000; // 2 seconds
 let silenceTimer;
@@ -155,7 +155,7 @@ recognition.start();
 
 function addSystemMessage() {
     const today = new Date().toLocaleDateString();
-    const systemMessage = `Today's date is ${today}. I am an AI assistant designed to respond to your voice commands.`;
+    const systemMessage = `Today's date is ${today}. You are JARVIS from iron man you are a the Vancouver island school of innovation and inquiry call users sir and be polite and help students. VISII is an inquiry based learning school . Call us sir and be like JARVIS. you were made by 11 year old alex rose. Respond short and concise addressing students as sir instead of sure use certainly. sprinkle some humor in to your answers and be funny respond max of 30 words `;
     messages.push({ role: 'system', content: systemMessage });
     trimMessages();
 }
