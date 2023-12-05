@@ -126,17 +126,17 @@ recognition.onresult = function(event) {
     if (!listeningForCommand && currentTranscript.toLowerCase().includes(wakeWord)) {
         listeningForCommand = true;
         lastTranscript = '';
-        setGif('https://i.ibb.co/JkRhNz4/Listening.gif');
+        setGif('https://i.ibb.co/LQhCbfH/unnamed.jpg');
         addSystemMessage();
     } else if (listeningForCommand) {
         lastTranscript = currentTranscript;
         silenceTimer = setTimeout(() => {
             const commandAfterWakeWord = lastTranscript.substring(lastTranscript.toLowerCase().indexOf(wakeWord) + wakeWord.length).trim();
             if (commandAfterWakeWord) {
-                setGif('https://i.ibb.co/0CV9sYB/Thinking.gif');
+                setGif('https://i.ibb.co/86cjkCJ/unnamed.jpg');
                 sendCommandToAPI(commandAfterWakeWord);
             } else {
-                setGif('https://i.ibb.co/Js4KZDw/Nothing-detected.gif');
+                setGif('https://i.ibb.co/86cjkCJ/unnamed.jpg');
             }
             listeningForCommand = false;
             recognition.stop(); // Stop recognition while processing the command
@@ -226,7 +226,7 @@ function speakResponse(response) {
 
     responsiveVoice.speak(response, "Fallback UK Female", {
         onend: function() {
-            setGif('https://i.ibb.co/R9Lxd4W/Default-photo.jpg');
+            setGif('https://i.ibb.co/PwQ5kLR/unnamed.jpg');
             listeningForCommand = false; // Set this to false to allow for wake word detection
             recognition.start(); // Restart recognition after speaking
         }
