@@ -1,44 +1,6 @@
-import speech_recognition as sr
 import interpreter
-from pynput import keyboard
-import threading
-import pyttsx3
 import os
 import time
-import queue
-
-
-# Initialize the TTS engine
-engine = pyttsx3.init()
-speech_queue = queue.Queue()
-
-def process_speech_queue():
-    """Process and speak items from the speech queue."""
-    while True:
-        text = speech_queue.get()
-        if text is None:
-            break  # Stop the thread if None is enqueued
-        speak(text)
-
-    speech_thread = threading.Thread(target=process_speech_queue, daemon=True)
-    speech_thread.start()
-
-
-def speak(text):
-    engine = pyttsx3.init()
-    with tts_lock:
-        engine.say(text)
-        engine.runAndWait()
-        engine.stop()  # Ensure the engine is stopped after speaking
-
-
-# Initialize the speech recognizer
-recognizer = sr.Recognizer()
-
-# Lock for TTS engine
-tts_lock = threading.Lock()
-# Initialize the speech recognizer
-recognizer = sr.Recognizer()
 
 # ASCII Art
 ascii_art = """
@@ -57,11 +19,6 @@ interpreter.auto_run = True  # Don't require user confirmation
 interpreter.api_key = "sk-000"  # Replace with your actual API key
 
 API_KEY_FILE = "api_key.txt"
-
-# Initialize the TTS engine
-engine = pyttsx3.init()
-speech_queue = queue.Queue()
-
 
 # Modified part for handling API key
 def get_api_key():
@@ -87,20 +44,14 @@ def display_ascii_art():
 def display_tutorial():
     print("Welcome to Jarvis Alpha")
     print("------------------------------------------------")
-    print("1. Use the down arrow key to activate the assistant.")
+    print("1. Type your commands or questions and press Enter.")
     print("2. The assistant can run code on your PC.")
-    print("3. You can also ask questions and get responses.")
-    print("4. The assistant can browse the web for information.")
+    print("3. The assistant can browse the web for information.")
     print("------------------------------------------------")
 
-def handle_speech():
-    with sr.Microphone() as source:
-        print("Listening...")
-        audio = recognizer.listen(source)
-
-    try:
-        text = recognizer.recognize_google(audio)
-        print(f"You said: {text}")
+def handle_text_input():
+    while True:
+        text = input("Type your command or question: ")
 
         # Sending text to Open Interpreter and getting response
         interpreter.chat(text)
@@ -108,27 +59,12 @@ def handle_speech():
         if interpreter.messages:
             last_message = interpreter.messages[-1]
             if last_message['role'] == 'assistant' and 'message' in last_message:
-                spoken_response = last_message['message']
-                print(spoken_response)
-                speak(spoken_response)
-    except Exception as e:
-        print(f"Error: {e}")
-
-def on_press(key):
-    if key == keyboard.Key.down:
-        threading.Thread(target=handle_speech).start()
-
-def on_release(key):
-    pass  # Currently, nothing needs to happen on key release.
-
-# Listener for keyboard events
-listener = keyboard.Listener(on_press=on_press, on_release=on_release)
-listener.start()
+                response = last_message['message']
+                print(response)
 
 # Display ASCII Art and Tutorial
 display_ascii_art()
 display_tutorial()
 
-# Keep the script running
-while True:
-    pass
+# Start handling text input
+handle_text_input()
