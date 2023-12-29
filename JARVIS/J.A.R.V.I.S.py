@@ -23,9 +23,6 @@ def process_speech_queue():
     speech_thread = threading.Thread(target=process_speech_queue, daemon=True)
     speech_thread.start()
 
-def speak(text):
-   speech_queue.put(text)
-
 
 def speak(text):
     engine = pyttsx3.init()
@@ -57,7 +54,30 @@ Y8888P  YP   YP 88   YD    YP    Y888888P `8888Y'
 interpreter.system_message += "\nRun all shell commands with -y."
 interpreter.model = "gpt-3.5-turbo"
 interpreter.auto_run = True  # Don't require user confirmation
-interpreter.api_key = "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"  # Replace with your actual API key
+interpreter.api_key = "sk-000"  # Replace with your actual API key
+
+API_KEY_FILE = "api_key.txt"
+
+# Initialize the TTS engine
+engine = pyttsx3.init()
+speech_queue = queue.Queue()
+
+
+# Modified part for handling API key
+def get_api_key():
+    # Check if API key file exists
+    if os.path.exists(API_KEY_FILE):
+        with open(API_KEY_FILE, 'r') as file:
+            return file.read().strip()
+    else:
+        # Ask user for API key
+        api_key = input("Please enter your API key: ")
+        with open(API_KEY_FILE, 'w') as file:
+            file.write(api_key)
+        return api_key
+
+# Set API key for interpreter
+interpreter.api_key = get_api_key()
 
 def display_ascii_art():
     for line in ascii_art.split('\n'):
